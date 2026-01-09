@@ -7,8 +7,8 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, ContextTypes, filters
 
 # ===== ENV VARIABLES =====
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-XAI_API_KEY = os.getenv("XAI_API_KEY")
+TELEGRAM_BOT_TOKEN = os.getenv("8526803851:AAEtV-27O7rc02-gp2NfmsaxSvzpS4Ed7TI")
+XAI_API_KEY = os.getenv("xai-7p2PAwAq5hwRXJ4UUFk4Qm6soECFfPXpn1WrxXYGLkBR4DiAZ7A4ADU9QiSTVXuWYbMiXwrlx0hkNcrf")
 
 if not TELEGRAM_BOT_TOKEN or not XAI_API_KEY:
     raise RuntimeError("Env vars missing: TELEGRAM_BOT_TOKEN or XAI_API_KEY")
