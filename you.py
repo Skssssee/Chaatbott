@@ -2,9 +2,8 @@ import requests
 from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, ContextTypes, filters
 
-# 🔐 NEVER hardcode real keys in public repos
-TELEGRAM_BOT_TOKEN = "8401058181:AAG3VeCcixxdX9K91RAyGMmWpHi9uy55IP8"
-XAI_API_KEY = "xai-7p2PAwAq5hwRXJ4UUFk4Qm6soECFfPXpn1WrxXYGLkBR4DiAZ7A4ADU9QiSTVXuWYbMiXwrlx0hkNcrf"
+TELEGRAM_BOT_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"
+XAI_API_KEY = "NEW_XAI_API_KEY"   # 🔴 NEW KEY ONLY
 
 XAI_URL = "https://api.x.ai/v1/chat/completions"
 
@@ -17,22 +16,26 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     }
 
     payload = {
-        "model": "grok-2",
+        "model": "grok-2-latest",
         "messages": [
-            {"role": "system", "content": "You are a helpful Telegram chatbot."},
             {"role": "user", "content": user_msg}
         ]
     }
 
     try:
-        res = requests.post(XAI_URL, headers=headers, json=payload, timeout=30)
-        data = res.json()
+        r = requests.post(XAI_URL, headers=headers, json=payload, timeout=30)
+        data = r.json()
+
+        # 👇 DEBUG (IMPORTANT)
+        if "choices" not in data:
+            await update.message.reply_text(f"❌ Grok API Error:\n{data}")
+            return
 
         reply = data["choices"][0]["message"]["content"]
         await update.message.reply_text(reply)
 
     except Exception as e:
-        await update.message.reply_text("❌ Error from Grok API")
+        await update.message.reply_text(f"❌ Exception: {e}")
 
 def main():
     app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
