@@ -1,16 +1,21 @@
-import requests
 import os
+import requests
 from dotenv import load_dotenv
+from telegram import Update
+from telegram.ext import ApplicationBuilder, MessageHandler, ContextTypes, filters
 
+# Load env
 load_dotenv()
 
-API_KEY = os.getenv("GEMINI_API_KEY")
+BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-if not API_KEY:
-    raise RuntimeError("❌ GEMINI_API_KEY missing in .env")
+if not BOT_TOKEN or not GEMINI_API_KEY:
+    raise RuntimeError("❌ Missing TELEGRAM_BOT_TOKEN or GEMINI_API_KEY")
 
-API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent"
+GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent"
 
+# Human-like system prompt
 SYSTEM_PROMPT = """
 You are chatting like a real human.
 Be friendly, casual, and natural.
@@ -18,17 +23,29 @@ Use simple words.
 Avoid robotic or formal tone.
 Show empathy when needed.
 Keep replies short and conversational.
-If the user uses Hinglish, reply in Hinglish.
-Ask follow-up questions when it feels natural.
+Ask follow-up questions when appropriate.
+Use Hinglish when the user uses Hinglish.
 """
 
-def ask_gemini(user_message):
+# Memory (per user)
+user_memory = {}
+
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    text = update.message.text
+
+    history = user_memory.get(user_id, [])
+
+    prompt_text = SYSTEM_PROMPT + "\n"
+    for h in history:
+        prompt_text += f"{h['role']}: {h['text']}\n"
+    prompt_text += f"user: {text}\nassistant:"
+
     payload = {
         "contents": [
             {
                 "parts": [
-                    {"text": SYSTEM_PROMPT},
-                    {"text": user_message}
+                    {"text": prompt_text}
                 ]
             }
         ]
@@ -36,34 +53,28 @@ def ask_gemini(user_message):
 
     headers = {
         "Content-Type": "application/json",
-        "X-Goog-Api-Key": API_KEY
+        "X-Goog-Api-Key": GEMINI_API_KEY
     }
 
-    r = requests.post(API_URL, headers=headers, json=payload, timeout=30)
-
-    if r.status_code != 200:
-        return f"❌ Error: {r.text}"
-
-    data = r.json()
-
     try:
-        return data["candidates"][0]["content"]["parts"][0]["text"]
-    except:
-        return "❌ No response"
+        r = requests.post(GEMINI_URL, headers=headers, json=payload, timeout=30)
+        data = r.json()
+        reply = data["candidates"][0]["content"]["parts"][0]["text"]
+    except Exception:
+        reply = "Server thoda busy hai 😅 thodi der baad try karo."
+
+    # Save memory (last 6 messages)
+    history.append({"role": "user", "text": text})
+    history.append({"role": "assistant", "text": reply})
+    user_memory[user_id] = history[-6:]
+
+    await update.message.reply_text(reply)
 
 def main():
-    print("🤖 Gemini AI Chat (type 'exit' to quit)")
-    print("-" * 40)
-
-    while True:
-        user = input("👤 You: ").strip()
-
-        if user.lower() in ["exit", "quit"]:
-            print("👋 Bye! Take care.")
-            break
-
-        reply = ask_gemini(user)
-        print(f"🤖 Gemini: {reply}\n")
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    print("🤖 Gemini Telegram Bot is running...")
+    app.run_polling()
 
 if __name__ == "__main__":
     main()
