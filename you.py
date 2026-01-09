@@ -1,9 +1,13 @@
+import os
 import requests
 from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, ContextTypes, filters
 
-TELEGRAM_BOT_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"
-XAI_API_KEY = "NEW_XAI_API_KEY"   # 🔴 NEW KEY ONLY
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+XAI_API_KEY = os.getenv("XAI_API_KEY")
+
+if not TELEGRAM_BOT_TOKEN or not XAI_API_KEY:
+    raise RuntimeError("❌ Env vars missing: TELEGRAM_BOT_TOKEN or XAI_API_KEY")
 
 XAI_URL = "https://api.x.ai/v1/chat/completions"
 
@@ -18,6 +22,7 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     payload = {
         "model": "grok-2-latest",
         "messages": [
+            {"role": "system", "content": "You are a helpful Telegram chatbot."},
             {"role": "user", "content": user_msg}
         ]
     }
@@ -26,7 +31,6 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
         r = requests.post(XAI_URL, headers=headers, json=payload, timeout=30)
         data = r.json()
 
-        # 👇 DEBUG (IMPORTANT)
         if "choices" not in data:
             await update.message.reply_text(f"❌ Grok API Error:\n{data}")
             return
