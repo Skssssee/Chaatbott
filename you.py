@@ -1,14 +1,18 @@
-from dotenv import load_dotenv
-load_dotenv()  # .env file load karega
-
 import os
+from dotenv import load_dotenv
+
+# 🔴 FORCE load .env from same folder as this file
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ENV_PATH = os.path.join(BASE_DIR, ".env")
+load_dotenv(ENV_PATH)
+
 import requests
 from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, ContextTypes, filters
 
-# ===== ENV VARIABLES =====
-TELEGRAM_BOT_TOKEN = os.getenv("8526803851:AAEtV-27O7rc02-gp2NfmsaxSvzpS4Ed7TI")
-XAI_API_KEY = os.getenv("xai-7p2PAwAq5hwRXJ4UUFk4Qm6soECFfPXpn1WrxXYGLkBR4DiAZ7A4ADU9QiSTVXuWYbMiXwrlx0hkNcrf")
+# ===== ENV VARS =====
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+XAI_API_KEY = os.getenv("XAI_API_KEY")
 
 if not TELEGRAM_BOT_TOKEN or not XAI_API_KEY:
     raise RuntimeError("Env vars missing: TELEGRAM_BOT_TOKEN or XAI_API_KEY")
@@ -17,7 +21,7 @@ if not TELEGRAM_BOT_TOKEN or not XAI_API_KEY:
 XAI_URL = "https://api.x.ai/v1/chat/completions"
 XAI_MODEL = "grok-2-latest"
 
-# ===== MESSAGE HANDLER =====
+# ===== HANDLER =====
 async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_msg = update.message.text
 
@@ -38,16 +42,15 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
         r = requests.post(XAI_URL, headers=headers, json=payload, timeout=30)
         data = r.json()
 
-        # Agar API error aaye
         if "choices" not in data:
-            await update.message.reply_text(f"Grok API Error:\n{data}")
+            await update.message.reply_text(str(data))
             return
 
         reply = data["choices"][0]["message"]["content"]
         await update.message.reply_text(reply)
 
     except Exception as e:
-        await update.message.reply_text(f"Exception: {e}")
+        await update.message.reply_text(f"Error: {e}")
 
 # ===== MAIN =====
 def main():
