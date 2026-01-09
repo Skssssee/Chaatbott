@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv()  # .env file load karega
 
 import os
 import requests
@@ -11,7 +11,7 @@ TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 XAI_API_KEY = os.getenv("XAI_API_KEY")
 
 if not TELEGRAM_BOT_TOKEN or not XAI_API_KEY:
-    raise RuntimeError("❌ Env vars missing: TELEGRAM_BOT_TOKEN or XAI_API_KEY")
+    raise RuntimeError("Env vars missing: TELEGRAM_BOT_TOKEN or XAI_API_KEY")
 
 # ===== XAI CONFIG =====
 XAI_URL = "https://api.x.ai/v1/chat/completions"
@@ -38,16 +38,16 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
         r = requests.post(XAI_URL, headers=headers, json=payload, timeout=30)
         data = r.json()
 
-        # DEBUG if Grok fails
+        # Agar API error aaye
         if "choices" not in data:
-            await update.message.reply_text(f"❌ Grok API Error:\n{data}")
+            await update.message.reply_text(f"Grok API Error:\n{data}")
             return
 
         reply = data["choices"][0]["message"]["content"]
         await update.message.reply_text(reply)
 
     except Exception as e:
-        await update.message.reply_text(f"❌ Exception: {e}")
+        await update.message.reply_text(f"Exception: {e}")
 
 # ===== MAIN =====
 def main():
